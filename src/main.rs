@@ -46,8 +46,10 @@ fn create_headers(access_key: &str) -> HeaderMap {
     headers
 }
 
-async fn fetch_scrape_url(args: &Cli, page: u32) -> Result<String, Error> {
-    let full_url = format!("{}?page={}&per_page={}", args.url, page, args.per_page);
+async fn fetch_scrape_url(args: &Cli) -> Result<String, Error> {
+    let current_page = fetch_current_page(&args.hosts).await?;
+
+    let full_url = format!("{}?page={}&per_page={}", args.url, current_page, args.per_page);
     println!("Fetching: {}", full_url);
 
     let client = Client::new();
@@ -109,25 +111,18 @@ async fn save_scraped_url(host: &str, payload: String, access_key: &str) -> Resu
     Ok(())
 }
 
-
 #[tokio::main]
 async fn main() {
     let args = Cli::parse();
 
-    let mut current_page = args.page;
-
     for _ in 0..args.scrape_count {
-        println!("Scraping page: {}", current_page);
-
-        match fetch_scrape_url(&args, current_page).await {
-            Ok(_) => println!("Scraped page {} successfully!", current_page),
-            Err(e) => eprintln!("Error fetching scrape URL for page {}: {}", current_page, e),
+        match fetch_scrape_url(&args).await {
+            Ok(_) => println!("Scraping successful!"),
+            Err(e) => eprintln!("Error during scraping: {}", e),
         }
 
-        println!("Waiting for {} milliseconds before the next scrape...", args.interval);
+        println!("next scrape in {}", args.interval);
         sleep(Duration::from_millis(args.interval)).await;
-
-        current_page += 1;
     }
 
     println!("Done scraping.");
