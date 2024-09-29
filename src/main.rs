@@ -117,24 +117,32 @@ async fn save_scraped_url(host: &str, payload: String, access_key: &str) -> Resu
     Ok(())
 }
 
+
 #[tokio::main]
 async fn main() {
     let args = Cli::parse();
     let proxy_count = args.proxies.len();
     let use_proxies = !args.proxies.is_empty();
+    let mut current_interval = args.interval; // Start with the initial interval
 
     for i in 0..args.scrape_count {
         let proxy_index = if use_proxies { Some(i as usize % proxy_count) } else { None };
 
         match fetch_scrape_url(&args, proxy_index).await {
-            Ok(_) => println!("Scraping successful!"),
-            Err(e) => eprintln!("Error during scraping: {}", e),
+            Ok(_) => {
+                println!("Scraping successful!");
+                current_interval = args.interval;
+            }
+            Err(e) => {
+                eprintln!("Error during scraping: {}", e);
+                current_interval += 10000;
+                println!("Increasing interval to {} milliseconds", current_interval);
+            }
         }
 
-        sleep(Duration::from_millis(args.interval)).await;
+        sleep(Duration::from_millis(current_interval)).await;
     }
 
     println!("Done scraping.");
 }
-
 
