@@ -54,7 +54,7 @@ async fn fetch_scrape_url(args: &Cli, proxy_index: Option<usize>) -> Result<Stri
     let full_url = format!("{}?page={}&per_page={}", args.url, current_page, args.per_page);
 
     let mut client_builder = Client::builder()
-        .timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(15))
         .danger_accept_invalid_certs(true); 
 
     if let Some(index) = proxy_index {
